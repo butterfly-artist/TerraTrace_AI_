@@ -8,12 +8,10 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.v1 import health
+from app.api.v1 import change_detection
 
 router = APIRouter(prefix="/api/v1")
 
 # ── Sub-routers ───────────────────────────────────────────────
 router.include_router(health.router)
-
-# Phase 2+: imagery, change-detection, search routers go here
-# router.include_router(imagery.router)
-# router.include_router(change_detection.router)
+router.include_router(change_detection.router)

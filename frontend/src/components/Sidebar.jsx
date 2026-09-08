@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
 import {
   Search, SlidersHorizontal, Database, ImageIcon,
-  ChevronRight, Calendar, Percent, MapPin, X, Layers
+  ChevronRight, Calendar, MapPin, X, Layers, Loader2
 } from 'lucide-react'
 
-// ── OSCD demo scenes (static for Phase 1) ──────────────────
+// ── OSCD demo scenes ──────────────────────────────────────────
 const DEMO_SCENES = [
   {
     id: 'abudhabi-2015-2018',
+    region: 'abudhabi',
     name: 'Abu Dhabi',
     location: 'UAE',
     dates: ['2015-01', '2018-01'],
@@ -18,6 +19,7 @@ const DEMO_SCENES = [
   },
   {
     id: 'beirut-2015-2018',
+    region: 'beirut',
     name: 'Beirut',
     location: 'Lebanon',
     dates: ['2015-03', '2018-03'],
@@ -28,6 +30,7 @@ const DEMO_SCENES = [
   },
   {
     id: 'dubai-2015-2018',
+    region: 'dubai',
     name: 'Dubai',
     location: 'UAE',
     dates: ['2015-02', '2018-02'],
@@ -38,6 +41,7 @@ const DEMO_SCENES = [
   },
   {
     id: 'lasvegas-2015-2018',
+    region: 'lasvegas',
     name: 'Las Vegas',
     location: 'Nevada, USA',
     dates: ['2015-04', '2018-04'],
@@ -48,6 +52,7 @@ const DEMO_SCENES = [
   },
   {
     id: 'mumbai-2015-2018',
+    region: 'mumbai',
     name: 'Mumbai',
     location: 'India',
     dates: ['2015-01', '2018-01'],
@@ -58,6 +63,7 @@ const DEMO_SCENES = [
   },
   {
     id: 'saclay-2015-2018',
+    region: 'saclay',
     name: 'Saclay',
     location: 'France',
     dates: ['2015-06', '2018-06'],
@@ -68,7 +74,7 @@ const DEMO_SCENES = [
   },
 ]
 
-function SceneCard({ scene, selected, onClick }) {
+function SceneCard({ scene, selected, loading, onClick }) {
   const changeColor =
     scene.changeScore >= 70
       ? 'var(--color-change-red)'
@@ -79,11 +85,13 @@ function SceneCard({ scene, selected, onClick }) {
   return (
     <button
       onClick={onClick}
+      disabled={loading}
       className="w-full text-left rounded-xl p-3 transition-all duration-200 glass-hover"
       style={{
         background: selected ? 'rgba(34,211,238,0.08)' : 'rgba(11,20,40,0.5)',
         border: `1px solid ${selected ? 'rgba(34,211,238,0.35)' : 'rgba(34,211,238,0.08)'}`,
         boxShadow: selected ? 'var(--shadow-glow)' : 'none',
+        opacity: loading && !selected ? 0.5 : 1,
       }}
       aria-pressed={selected}
       id={`scene-card-${scene.id}`}
@@ -96,6 +104,9 @@ function SceneCard({ scene, selected, onClick }) {
             <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
               {scene.name}
             </span>
+            {selected && loading && (
+              <Loader2 size={11} style={{ color: 'var(--color-terra)', animation: 'spin 1s linear infinite' }} />
+            )}
           </div>
           <div className="flex items-center gap-1 mt-0.5">
             <MapPin size={9} style={{ color: 'var(--color-text-muted)' }} />
@@ -147,9 +158,8 @@ function SceneCard({ scene, selected, onClick }) {
 /**
  * Sidebar — glass panel with search, filters, and OSCD scene list.
  */
-export default function Sidebar() {
+export default function Sidebar({ selectedRegion, onSelectRegion, isComparing }) {
   const [query, setQuery] = useState('')
-  const [selectedScene, setSelectedScene] = useState(null)
   const [showFilters, setShowFilters] = useState(false)
   const [maxCloud, setMaxCloud] = useState(20)
 
@@ -268,8 +278,9 @@ export default function Sidebar() {
             <SceneCard
               key={scene.id}
               scene={scene}
-              selected={selectedScene === scene.id}
-              onClick={() => setSelectedScene(scene.id === selectedScene ? null : scene.id)}
+              selected={selectedRegion === scene.region}
+              loading={isComparing}
+              onClick={() => onSelectRegion(scene.region)}
             />
           ))
         )}

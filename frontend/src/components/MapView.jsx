@@ -1,11 +1,21 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, useMap } from 'react-leaflet'
 import { Icon } from 'leaflet'
-import { Navigation, Crosshair, Maximize2 } from 'lucide-react'
+import { Navigation, Crosshair } from 'lucide-react'
 
 // ── Hyderabad, India ──────────────────────────────────────
 const HYDERABAD_CENTER = [17.3850, 78.4867]
 const DEFAULT_ZOOM = 12
+
+// ── City coordinates for map fly-to ──────────────────────────
+const CITY_COORDS = {
+  abudhabi:  { lat: 24.47,  lon:  54.37,  zoom: 12 },
+  beirut:    { lat: 33.89,  lon:  35.50,  zoom: 12 },
+  dubai:     { lat: 25.20,  lon:  55.27,  zoom: 12 },
+  lasvegas:  { lat: 36.17,  lon: -115.14, zoom: 12 },
+  mumbai:    { lat: 19.08,  lon:  72.88,  zoom: 12 },
+  saclay:    { lat: 48.72,  lon:   2.17,  zoom: 13 },
+}
 
 // ── Custom satellite pin marker ───────────────────────────
 const satelliteIcon = new Icon({
@@ -27,6 +37,19 @@ const satelliteIcon = new Icon({
   iconAnchor: [16, 40],
   popupAnchor: [0, -40],
 })
+
+// ── Fly-to handler (must be inside MapContainer) ───────────────────
+function FlyToRegion({ selectedRegion }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!selectedRegion) return
+    const city = CITY_COORDS[selectedRegion]
+    if (city) {
+      map.flyTo([city.lat, city.lon], city.zoom, { duration: 1.4 })
+    }
+  }, [selectedRegion, map])
+  return null
+}
 
 // ── Map tools component (uses useMap hook) ────────────────
 function MapControls({ onResetView }) {
@@ -116,10 +139,12 @@ function CoordDisplay() {
 }
 
 /**
- * MapView — full-height Leaflet map centred on Hyderabad, India.
- * Uses OpenStreetMap tiles with a dark hue-rotate filter (applied in CSS).
+ * MapView — Leaflet map that flies to the selected OSCD region.
+ * Props:
+ *   selectedRegion  string|null  current OSCD city key (e.g. 'dubai')
+ *   compareData     object|null  result from /compare (currently unused in map)
  */
-export default function MapView() {
+export default function MapView({ selectedRegion, compareData }) {
   const [mapRef, setMapRef] = useState(null)
 
   const resetView = useCallback(() => {
@@ -163,6 +188,9 @@ export default function MapView() {
             </div>
           </Popup>
         </Marker>
+
+        {/* ── Fly-to handler ────────────────────────── */}
+        <FlyToRegion selectedRegion={selectedRegion} />
 
         {/* ── Custom controls ────────────────────────── */}
         <MapControls onResetView={resetView} />

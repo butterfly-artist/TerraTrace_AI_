@@ -38,7 +38,17 @@ app.add_middleware(
 app.include_router(api_v1_router)
 
 
-# ── Root redirect ─────────────────────────────────────────────
+# ── Root redirect & Health check ──────────────────────────────
 @app.get("/", include_in_schema=False)
 async def root():
     return {"message": f"Welcome to {settings.app_name} API. Visit /docs for the interactive API documentation."}
+
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    return {
+        "status": "healthy",
+        "app": settings.app_name,
+        "version": settings.version,
+    }
+
