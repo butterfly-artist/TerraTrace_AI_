@@ -1,0 +1,36 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────
+#  TerraTrace AI — Local Development Stack
+#
+#  Services:
+#    • db  — PostgreSQL 16 + PostGIS 3.4
+#
+#  Usage:
+#    docker compose up -d        # start
+#    docker compose down -v      # stop + wipe volumes
+# ─────────────────────────────────────────────────────────────
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: terratrace_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-terratrace}
+      POSTGRES_USER: ${POSTGRES_USER:-terratrace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-terratrace_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/db/init:/docker-entrypoint-initdb.d   # optional seed scripts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-terratrace} -d ${POSTGRES_DB:-terratrace}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    driver: local

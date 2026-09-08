@@ -1,0 +1,3 @@
+# This directory holds the OSCD (Onera Satellite Change Detection) demo dataset.
+# Run `python scripts/download_oscd.py --split train` to populate it.
+# All .tif / .png data files are gitignored — only this placeholder is tracked.

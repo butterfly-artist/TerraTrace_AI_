@@ -1,0 +1,207 @@
+/* ─────────────────────────────────────────────────────────────
+   TerraTrace AI — Global Design System
+   Space-grade dark satellite imagery platform aesthetic
+───────────────────────────────────────────────────────────── */
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  --color-bg-primary:    #02040a;
+  --color-bg-secondary:  #060c1a;
+  --color-bg-tertiary:   #0c1528;
+  --color-bg-card:       #111e36;
+
+  --color-terra:         #22d3ee;
+  --color-terra-dim:     rgba(34, 211, 238, 0.15);
+  --color-terra-glow:    rgba(34, 211, 238, 0.4);
+
+  --color-sat-green:     #4ade80;
+  --color-change-red:    #f87171;
+
+  --color-text-primary:  #f0f6ff;
+  --color-text-secondary:#8ba8c8;
+  --color-text-muted:    #4a6080;
+
+  --color-border:        rgba(34, 211, 238, 0.12);
+  --color-border-hover:  rgba(34, 211, 238, 0.3);
+
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+
+  --blur-glass: blur(12px);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.3);
+  --shadow-glow: 0 0 20px rgba(34, 211, 238, 0.25);
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track { background: var(--color-bg-secondary); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-terra-dim);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-terra); }
+
+/* ── Glass Morphism Utilities ──────────────────────────────── */
+.glass {
+  background: rgba(11, 20, 40, 0.72);
+  backdrop-filter: var(--blur-glass);
+  -webkit-backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.glass-hover {
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-hover:hover {
+  background: rgba(20, 34, 64, 0.85);
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-glow);
+}
+
+/* ── Glow Effects ──────────────────────────────────────────── */
+.glow-terra {
+  box-shadow: 0 0 12px var(--color-terra-glow), 0 0 30px rgba(34,211,238,0.15);
+}
+
+.text-glow {
+  text-shadow: 0 0 12px var(--color-terra-glow);
+}
+
+/* ── Gradient Text ─────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #22d3ee 0%, #818cf8 60%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Status Dot ────────────────────────────────────────────── */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-sat-green);
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+}
+
+/* ── Scan line decorative effect (top bar) ─────────────────── */
+.scanline {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(34, 211, 238, 0.01) 2px,
+    rgba(34, 211, 238, 0.01) 4px
+  );
+}
+
+/* ── Input ─────────────────────────────────────────────────── */
+.input-terra {
+  background: rgba(6, 12, 26, 0.8);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.875rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+.input-terra::placeholder { color: var(--color-text-muted); }
+.input-terra:focus {
+  border-color: var(--color-terra);
+  box-shadow: 0 0 0 3px var(--color-terra-dim);
+}
+
+/* ── Badge ─────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.badge-terra {
+  background: var(--color-terra-dim);
+  color: var(--color-terra);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+}
+.badge-green {
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--color-sat-green);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+}
+
+/* ── Leaflet override — dark tile blend ────────────────────── */
+.leaflet-container {
+  background: #02040a;
+  font-family: 'Inter', sans-serif;
+}
+.leaflet-tile-pane {
+  filter: brightness(0.82) saturate(0.75) hue-rotate(185deg);
+}
+.leaflet-control-attribution {
+  background: rgba(6, 12, 26, 0.8) !important;
+  color: #4a6080 !important;
+  font-size: 10px !important;
+  backdrop-filter: blur(6px);
+}
+.leaflet-control-attribution a { color: #22d3ee !important; }
+.leaflet-control-zoom a {
+  background: rgba(11, 20, 40, 0.85) !important;
+  color: #22d3ee !important;
+  border-color: rgba(34, 211, 238, 0.2) !important;
+  backdrop-filter: blur(8px);
+}
+.leaflet-control-zoom a:hover {
+  background: rgba(34, 211, 238, 0.15) !important;
+}
+.leaflet-popup-content-wrapper {
+  background: rgba(11, 20, 40, 0.95) !important;
+  border: 1px solid rgba(34, 211, 238, 0.2) !important;
+  color: #f0f6ff !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(12px);
+}
+.leaflet-popup-tip { background: rgba(11, 20, 40, 0.95) !important; }

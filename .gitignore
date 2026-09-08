@@ -1,0 +1,61 @@
+# ─── Secrets ──────────────────────────────────────────────────
+.env
+*.env.local
+
+# ─── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+*.sqlite3
+
+# ─── Node / Frontend ──────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+.npm/
+*.tsbuildinfo
+
+# ─── Data / ML ────────────────────────────────────────────────
+# Keep the demo folder structure but not large binary data
+data/demo/**
+!data/demo/.gitkeep
+data/raw/
+data/processed/
+*.tif
+*.tiff
+*.nc
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# ─── Docker ───────────────────────────────────────────────────
+docker-compose.override.yml
+
+# ─── OS ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── IDE ──────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
