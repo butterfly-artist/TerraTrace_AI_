@@ -43,12 +43,14 @@ class Settings(BaseSettings):
     postgres_user: str = "terratrace"
     postgres_password: str = "terratrace_dev_password"
 
-    # ── External APIs (optional for Phase 1) ──────────────────
+    # ── External APIs ───────────────────────────────────────
     copernicus_client_id: str = ""
     copernicus_client_secret: str = ""
     gemini_api_key: str = ""
     groq_api_key: str = ""
     hf_token: str = ""
+    nasa_api_key: str = ""
+    maptiler_api_key: str = ""
 
 
 @lru_cache

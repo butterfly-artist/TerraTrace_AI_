@@ -52,7 +52,7 @@ function FlyToRegion({ selectedRegion }) {
 }
 
 // ── Map tools component (uses useMap hook) ────────────────
-function MapControls({ onResetView }) {
+function MapControls({ onResetView, useGibsLayer, onToggleGibs }) {
   const map = useMap()
 
   const handleLocate = () => {
@@ -105,6 +105,23 @@ function MapControls({ onResetView }) {
       >
         <Navigation size={14} />
       </button>
+
+      {/* NASA GIBS Toggle */}
+      <button
+        onClick={onToggleGibs}
+        id="map-gibs-btn"
+        className="flex items-center justify-center h-8 px-2 rounded-lg text-xs font-semibold transition-all duration-200"
+        style={{
+          background: useGibsLayer ? 'rgba(34,211,238,0.25)' : 'rgba(11,20,40,0.88)',
+          border: useGibsLayer ? '1px solid #22d3ee' : '1px solid rgba(34,211,238,0.2)',
+          color: useGibsLayer ? '#ffffff' : 'var(--color-terra)',
+          backdropFilter: 'blur(8px)',
+        }}
+        title="Toggle NASA GIBS Near-Real-Time Basemap"
+        aria-label="Toggle NASA GIBS Layer"
+      >
+        NASA GIBS
+      </button>
     </div>
   )
 }
@@ -140,12 +157,10 @@ function CoordDisplay() {
 
 /**
  * MapView — Leaflet map that flies to the selected OSCD region.
- * Props:
- *   selectedRegion  string|null  current OSCD city key (e.g. 'dubai')
- *   compareData     object|null  result from /compare (currently unused in map)
  */
 export default function MapView({ selectedRegion, compareData }) {
   const [mapRef, setMapRef] = useState(null)
+  const [useGibsLayer, setUseGibsLayer] = useState(false)
 
   const resetView = useCallback(() => {
     mapRef?.flyTo(HYDERABAD_CENTER, DEFAULT_ZOOM, { duration: 1.2 })
@@ -161,12 +176,20 @@ export default function MapView({ selectedRegion, compareData }) {
         ref={setMapRef}
         id="main-map"
       >
-        {/* ── OSM Tile Layer ─────────────────────────── */}
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          maxZoom={19}
-        />
+        {/* ── Base Tile Layer (OSM vs NASA GIBS) ────────── */}
+        {useGibsLayer ? (
+          <TileLayer
+            url="https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/2024-01-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg"
+            attribution='&copy; NASA EOSDIS GIBS'
+            maxZoom={9}
+          />
+        ) : (
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            maxZoom={19}
+          />
+        )}
 
         {/* ── Leaflet zoom (top-left) ────────────────── */}
         <ZoomControl position="topleft" />
@@ -182,7 +205,7 @@ export default function MapView({ selectedRegion, compareData }) {
                 <div>17.3850°N, 78.4867°E</div>
                 <div>Telangana State Capital</div>
                 <div style={{ marginTop: '6px', color: 'var(--color-text-muted)' }}>
-                  TerraTrace AI Phase 1 · Offline Mode
+                  TerraTrace AI Platform
                 </div>
               </div>
             </div>
@@ -193,7 +216,11 @@ export default function MapView({ selectedRegion, compareData }) {
         <FlyToRegion selectedRegion={selectedRegion} />
 
         {/* ── Custom controls ────────────────────────── */}
-        <MapControls onResetView={resetView} />
+        <MapControls
+          onResetView={resetView}
+          useGibsLayer={useGibsLayer}
+          onToggleGibs={() => setUseGibsLayer(prev => !prev)}
+        />
         <CoordDisplay />
       </MapContainer>
 
@@ -215,8 +242,9 @@ export default function MapView({ selectedRegion, compareData }) {
           backdropFilter: 'blur(8px)',
         }}
       >
-        🛰 OSM · Phase 1 Offline · Hyderabad, India
+        🛰 {useGibsLayer ? 'NASA GIBS Layer' : 'OpenStreetMap'} · TerraTrace AI
       </div>
     </div>
   )
 }
+

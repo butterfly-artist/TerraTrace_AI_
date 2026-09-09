@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Sparkles, Send, Bot, User, CheckCircle2, MapPin, Calendar, Layers, AlertCircle, Loader2 } from 'lucide-react'
+import { Sparkles, Send, Bot, User, CheckCircle2, MapPin, Calendar, Layers, AlertCircle, Loader2, Mic } from 'lucide-react'
 
 const SUGGESTED_QUERIES = [
   "Find new construction near Dubai between 2015 and 2018",
@@ -19,6 +19,51 @@ export default function ChatPanel({ onExecuteQueryResult, currentMode }) {
     }
   ])
   const [isLoading, setIsLoading] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [voiceNotice, setVoiceNotice] = useState(null)
+
+  const handleVoiceSearch = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setVoiceNotice("Web Speech API is not supported in your browser. Typing is enabled.")
+      setTimeout(() => setVoiceNotice(null), 4000)
+      return
+    }
+
+    try {
+      const recognition = new SpeechRecognition()
+      recognition.continuous = false
+      recognition.interimResults = false
+      recognition.lang = 'en-US'
+
+      recognition.onstart = () => {
+        setIsListening(true)
+        setVoiceNotice("Listening... speak your satellite query now.")
+      }
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setQuery(transcript)
+        setVoiceNotice(`Speech captured: "${transcript}"`)
+        setTimeout(() => setVoiceNotice(null), 3000)
+      }
+
+      recognition.onerror = (event) => {
+        logger.warning("Speech recognition error:", event.error)
+        setVoiceNotice(`Voice input error: ${event.error}`)
+        setTimeout(() => setVoiceNotice(null), 3000)
+      }
+
+      recognition.onend = () => {
+        setIsListening(false)
+      }
+
+      recognition.start()
+    } catch (err) {
+      setVoiceNotice("Voice input failed to start.")
+      setTimeout(() => setVoiceNotice(null), 3000)
+    }
+  }
 
   const handleSend = async (textToSend) => {
     const prompt = textToSend || query
@@ -168,6 +213,14 @@ export default function ChatPanel({ onExecuteQueryResult, currentMode }) {
         )}
       </div>
 
+      {/* Voice status notification banner */}
+      {voiceNotice && (
+        <div className="px-3 py-1.5 bg-cyan-950/60 border-t border-b border-cyan-500/30 text-[11px] text-cyan-300 flex items-center gap-2">
+          <Mic size={12} className={isListening ? "animate-pulse text-red-400" : ""} />
+          {voiceNotice}
+        </div>
+      )}
+
       {/* Suggested Quick Queries */}
       <div className="p-2.5 flex-shrink-0" style={{ borderTop: '1px solid rgba(34,211,238,0.08)' }}>
         <p className="text-[10px] mb-1.5 font-medium" style={{ color: 'var(--color-text-muted)' }}>Suggested prompts:</p>
@@ -206,6 +259,22 @@ export default function ChatPanel({ onExecuteQueryResult, currentMode }) {
           className="input-terra text-xs py-2 flex-1"
           disabled={isLoading}
         />
+
+        {/* Voice Recognition Microphone Button */}
+        <button
+          type="button"
+          onClick={handleVoiceSearch}
+          title="Voice Search via Web Speech API"
+          className="p-2 rounded-lg flex items-center justify-center transition-all"
+          style={{
+            background: isListening ? 'rgba(239, 68, 68, 0.25)' : 'rgba(34,211,238,0.15)',
+            border: isListening ? '1px solid #ef4444' : '1px solid rgba(34,211,238,0.2)',
+            color: isListening ? '#f87171' : 'var(--color-terra)',
+          }}
+        >
+          <Mic size={13} className={isListening ? "animate-pulse" : ""} />
+        </button>
+
         <button
           type="submit"
           disabled={!query.trim() || isLoading}
@@ -222,3 +291,4 @@ export default function ChatPanel({ onExecuteQueryResult, currentMode }) {
     </div>
   )
 }
+

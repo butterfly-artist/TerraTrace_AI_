@@ -1,19 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
-import { X, Eye, EyeOff, Activity } from 'lucide-react'
+import { X, Eye, EyeOff, Activity, Maximize2, Minimize2, Columns, Sliders } from 'lucide-react'
 
-/**
- * CompareSlider — drag-to-reveal before/after image comparison.
- *
- * Props:
- *   beforePng   string  base64 data-URL for the "before" image
- *   afterPng    string  base64 data-URL for the "after" image
- *   maskPng     string  base64 data-URL for the RGBA change mask
- *   beforeLabel string  label shown on the left (e.g. "2015")
- *   afterLabel  string  label shown on the right (e.g. "2018")
- *   stats       object  { changed_pixels, total_pixels, change_percentage, threshold_used }
- *   regionName  string  human-readable region name
- *   onClose     fn      called when the close button is clicked
- */
 export default function CompareSlider({
   beforePng,
   afterPng,
@@ -23,9 +10,13 @@ export default function CompareSlider({
   stats       = {},
   regionName  = '',
   onClose,
+  isMaximized = false,
+  onToggleMaximize,
 }) {
   const [sliderPos, setSliderPos]   = useState(50)   // 0-100%
   const [showMask, setShowMask]     = useState(true)
+  const [maskOpacity, setMaskOpacity] = useState(0.85)
+  const [layoutMode, setLayoutMode] = useState('swipe') // 'swipe' vs 'side-by-side'
   const [dragging, setDragging]     = useState(false)
   const containerRef                = useRef(null)
 
@@ -43,15 +34,14 @@ export default function CompareSlider({
   }
 
   const handleMouseMove = useCallback((e) => {
-    if (dragging) updateSlider(e.clientX)
-  }, [dragging, updateSlider])
+    if (dragging && layoutMode === 'swipe') updateSlider(e.clientX)
+  }, [dragging, layoutMode, updateSlider])
 
   const handleMouseUp = useCallback(() => setDragging(false), [])
 
-  // Touch support
   const handleTouchMove = useCallback((e) => {
-    if (dragging) updateSlider(e.touches[0].clientX)
-  }, [dragging, updateSlider])
+    if (dragging && layoutMode === 'swipe') updateSlider(e.touches[0].clientX)
+  }, [dragging, layoutMode, updateSlider])
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove)
@@ -66,9 +56,8 @@ export default function CompareSlider({
     }
   }, [handleMouseMove, handleMouseUp, handleTouchMove])
 
-  // ── Click on container to jump slider ─────────────────────
   const handleContainerClick = (e) => {
-    if (!dragging) updateSlider(e.clientX)
+    if (!dragging && layoutMode === 'swipe') updateSlider(e.clientX)
   }
 
   const changePct  = stats.change_percentage ?? 0
@@ -80,8 +69,9 @@ export default function CompareSlider({
         display:       'flex',
         flexDirection: 'column',
         height:        '100%',
-        background:    'rgba(6,12,26,0.97)',
-        borderTop:     '1px solid rgba(34,211,238,0.15)',
+        background:    'rgba(6,12,26,0.98)',
+        borderTop:     '1px solid rgba(34,211,238,0.2)',
+        boxShadow:     '0 -4px 30px rgba(0,0,0,0.8)',
       }}
     >
       {/* ── Header bar ──────────────────────────────────── */}
@@ -91,45 +81,55 @@ export default function CompareSlider({
           alignItems:     'center',
           justifyContent: 'space-between',
           padding:        '6px 12px',
-          borderBottom:   '1px solid rgba(34,211,238,0.1)',
+          borderBottom:   '1px solid rgba(34,211,238,0.12)',
           flexShrink:     0,
+          background:     'rgba(11,20,40,0.85)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Activity size={13} style={{ color: 'var(--color-terra)' }} />
-          <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-            Change Detection — {regionName}
+          <Activity size={14} style={{ color: 'var(--color-terra)' }} />
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
+            {regionName} — Change Analysis
           </span>
-          {/* Change % badge */}
           <span
             style={{
               fontSize:   '10px',
               fontWeight: 700,
-              padding:    '1px 7px',
+              padding:    '2px 8px',
               borderRadius: '999px',
-              background:  `${changeColor}18`,
-              border:      `1px solid ${changeColor}40`,
+              background:  `${changeColor}20`,
+              border:      `1px solid ${changeColor}50`,
               color:       changeColor,
             }}
           >
-            {changePct}% changed
+            {changePct}% Surface Change
           </span>
-          <span
-            style={{
-              fontSize: '10px',
-              color:    'var(--color-text-muted)',
-              fontFamily: 'var(--font-mono, monospace)',
-            }}
-          >
-            threshold: {stats.threshold_used ?? 0.15}
-          </span>
+          {stats.total_changed_ha !== undefined && (
+            <span className="text-[11px] text-cyan-300 font-mono hidden sm:inline">
+              ({stats.total_changed_ha} ha)
+            </span>
+          )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Mode Switcher: Swipe vs Side-by-Side */}
+          <button
+            onClick={() => setLayoutMode(m => m === 'swipe' ? 'side-by-side' : 'swipe')}
+            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-all"
+            style={{
+              background: 'rgba(34,211,238,0.1)',
+              border: '1px solid rgba(34,211,238,0.2)',
+              color: 'var(--color-terra)',
+            }}
+            title="Switch between Swipe Slider and Side-by-Side view"
+          >
+            <Columns size={12} />
+            {layoutMode === 'swipe' ? 'Side-by-Side' : 'Swipe Slider'}
+          </button>
+
           {/* Toggle mask */}
           <button
             onClick={() => setShowMask(v => !v)}
-            title={showMask ? 'Hide change mask' : 'Show change mask'}
             style={{
               display:        'flex',
               alignItems:     'center',
@@ -139,35 +139,43 @@ export default function CompareSlider({
               fontSize:       '11px',
               fontWeight:     500,
               cursor:         'pointer',
-              background:     showMask ? 'rgba(248,113,113,0.12)' : 'rgba(34,211,238,0.08)',
-              border:         `1px solid ${showMask ? 'rgba(248,113,113,0.25)' : 'rgba(34,211,238,0.15)'}`,
+              background:     showMask ? 'rgba(248,113,113,0.15)' : 'rgba(34,211,238,0.08)',
+              border:         `1px solid ${showMask ? 'rgba(248,113,113,0.3)' : 'rgba(34,211,238,0.15)'}`,
               color:          showMask ? '#f87171' : 'var(--color-text-secondary)',
-              transition:     'all 0.15s ease',
             }}
           >
-            {showMask ? <Eye size={11} /> : <EyeOff size={11} />}
-            {showMask ? 'Mask on' : 'Mask off'}
+            {showMask ? <Eye size={12} /> : <EyeOff size={12} />}
+            {showMask ? 'Mask On' : 'Mask Off'}
           </button>
+
+          {/* Maximize / Minimize toggle */}
+          {onToggleMaximize && (
+            <button
+              onClick={onToggleMaximize}
+              title={isMaximized ? 'Restore Split View' : 'Maximize Compare Workspace'}
+              style={{
+                display: 'flex', alignItems: 'center', justifyCenter: 'center',
+                padding: '3px 8px', borderRadius: '6px', fontSize: '11px',
+                background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.2)',
+                color: 'var(--color-terra)', cursor: 'pointer',
+              }}
+            >
+              {isMaximized ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+            </button>
+          )}
 
           {/* Close */}
           {onClose && (
             <button
               onClick={onClose}
-              aria-label="Close comparison panel"
               style={{
-                display:      'flex',
-                alignItems:   'center',
-                justifyContent: 'center',
-                width:        '24px',
-                height:       '24px',
-                borderRadius: '6px',
-                cursor:       'pointer',
-                background:   'rgba(248,113,113,0.08)',
-                border:       '1px solid rgba(248,113,113,0.2)',
-                color:        '#f87171',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '24px', height: '24px', borderRadius: '6px', cursor: 'pointer',
+                background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)',
+                color: '#f87171',
               }}
             >
-              <X size={12} />
+              <X size={13} />
             </button>
           )}
         </div>

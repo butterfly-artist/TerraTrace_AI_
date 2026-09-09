@@ -7,12 +7,17 @@ import ChatPanel from '../components/ChatPanel.jsx'
 import EvidencePanel from '../components/EvidencePanel.jsx'
 import TimelineScrubber from '../components/TimelineScrubber.jsx'
 import ReportModal from '../components/ReportModal.jsx'
+import { Maximize2, Minimize2, Map, Sliders, Activity, Sparkles } from 'lucide-react'
 
 export default function Home() {
   const [selectedRegion, setSelectedRegion] = useState(null)
   const [compareData, setCompareData] = useState(null)
   const [isComparing, setIsComparing] = useState(false)
   const [compareError, setCompareError] = useState(null)
+
+  // Layout states
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isMaximizedCompare, setIsMaximizedCompare] = useState(false)
 
   // Mode: 'demo' vs 'live'
   const [currentMode, setCurrentMode] = useState('demo')
@@ -63,6 +68,7 @@ export default function Home() {
       setCompareData(null)
       setCompareError(null)
       setShowEvidence(false)
+      setIsMaximizedCompare(false)
       return
     }
     fetchCompareData(region, activeYearBefore, activeYearAfter)
@@ -89,6 +95,7 @@ export default function Home() {
     setCompareData(null)
     setCompareError(null)
     setShowEvidence(false)
+    setIsMaximizedCompare(false)
   }, [])
 
   const toggleMode = useCallback(() => {
@@ -121,9 +128,11 @@ export default function Home() {
           selectedRegion={selectedRegion}
           onSelectRegion={handleSelectRegion}
           isComparing={isComparing}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={() => setIsSidebarCollapsed(v => !v)}
         />
 
-        {/* Center / Right Column: Map + Compare Panel */}
+        {/* Center Main Workspace */}
         <div className="flex flex-col flex-1 overflow-hidden relative">
           {/* Timeline Scrubber floating overlay */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000]">
@@ -135,13 +144,28 @@ export default function Home() {
           </div>
 
           {/* Map View */}
-          <div style={{ flex: showPanel ? '1 1 0%' : '1 1 auto', minHeight: 0, position: 'relative' }}>
+          <div
+            style={{
+              flex: isMaximizedCompare ? '0 0 0px' : showPanel ? '1 1 50%' : '1 1 100%',
+              minHeight: 0,
+              display: isMaximizedCompare ? 'none' : 'block',
+              position: 'relative',
+              transition: 'flex 0.3s ease',
+            }}
+          >
             <MapView selectedRegion={selectedRegion} compareData={compareData} />
           </div>
 
-          {/* Compare panel — slides in from bottom */}
+          {/* Compare panel — slides in or maximizes */}
           {showPanel && (
-            <div style={{ height: '240px', flexShrink: 0, overflow: 'hidden' }}>
+            <div
+              style={{
+                height: isMaximizedCompare ? '100%' : '360px',
+                flexShrink: 0,
+                overflow: 'hidden',
+                transition: 'height 0.3s ease',
+              }}
+            >
               {isComparing ? (
                 <LoadingPanel regionName={selectedRegion} />
               ) : compareError ? (
@@ -156,6 +180,8 @@ export default function Home() {
                   stats={compareData.stats}
                   regionName={compareData.name}
                   onClose={handleCloseCompare}
+                  isMaximized={isMaximizedCompare}
+                  onToggleMaximize={() => setIsMaximizedCompare(v => !v)}
                 />
               ) : null}
             </div>
@@ -174,7 +200,7 @@ export default function Home() {
 
         {/* Right Drawer 2: Evidence Dashboard */}
         {showEvidence && compareData && (
-          <div className="w-[320px] flex-shrink-0 h-full z-[1050]">
+          <div className="w-[340px] flex-shrink-0 h-full z-[1050]">
             <EvidencePanel
               stats={compareData.stats}
               impact={compareData.impact}

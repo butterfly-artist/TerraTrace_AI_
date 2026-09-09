@@ -23,6 +23,13 @@ SYSTEM_PROMPT = """You are TerraTrace AI's Geospatial Intelligence Assistant.
 Your job is to parse user satellite imagery search queries, extract structured parameters,
 and execute tool calls to run change detection.
 
+AVAILABLE BACKEND TOOLS:
+- search_scenes(location, date_range)
+- run_change_detection(scene_before, scene_after)
+- get_spectral_history(location, date_range)
+- fetch_nasa_power_data(location, date_range)
+- generate_pdf_report(result_id)
+
 CRITICAL GUARDRAILS:
 1. You MUST NEVER invent or hallucinate change detection figures, percentages, or hectares.
 2. All quantitative findings MUST be derived strictly from the tool execution outputs.
@@ -59,6 +66,23 @@ def parse_query_and_execute(
 
     if result is None:
         result = _rule_based_parser(user_query, available_regions)
+
+    # Clean & validate extracted target region
+    valid_keys = [r.get("region") for r in available_regions if r.get("region")]
+    fallback_key = valid_keys[0] if valid_keys else "dubai"
+
+    if result and "intent" in result:
+        extracted = result["intent"].get("target_region_key")
+        if not extracted or str(extracted).lower() not in [k.lower() for k in valid_keys]:
+            result["intent"]["target_region_key"] = fallback_key
+            result["intent"]["location"] = fallback_key
+        else:
+            # Normalize to exact case key
+            for k in valid_keys:
+                if k.lower() == str(extracted).lower():
+                    result["intent"]["target_region_key"] = k
+                    result["intent"]["location"] = k
+                    break
 
     return result
 
@@ -109,7 +133,7 @@ def _rule_based_parser(query: str, available_regions: List[Dict[str, Any]]) -> D
 
 
 def _query_gemini(query: str, api_key: str, available_regions: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Query Gemini 2.5/3.6 Flash model for tool calling."""
+    """Query Gemini API model for tool calling."""
     import google.genai as genai
     from google.genai import types
 
@@ -129,34 +153,40 @@ Extract JSON with keys:
 Return ONLY valid JSON.
 """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.1,
-        )
-    )
+    for model_name in ["gemini-2.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash"]:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.1,
+                )
+            )
 
-    if response and response.text:
-        data = json.loads(response.text)
-        return {
-            "intent": {
-                "location": data.get("target_region_key", "dubai"),
-                "target_region_key": data.get("target_region_key", "dubai"),
-                "start_date": data.get("start_date", "2015-01"),
-                "end_date": data.get("end_date", "2018-01"),
-                "change_type": data.get("change_type", "new_built_up"),
-                "confidence_threshold": 0.15,
-            },
-            "llm_used": "Google Gemini API",
-            "narration_template": data.get("explanation_draft", "Analysis complete.")
-        }
+            if response and response.text:
+                data = json.loads(response.text)
+                return {
+                    "intent": {
+                        "location": data.get("target_region_key", "dubai"),
+                        "target_region_key": data.get("target_region_key", "dubai"),
+                        "start_date": data.get("start_date", "2015-01"),
+                        "end_date": data.get("end_date", "2018-01"),
+                        "change_type": data.get("change_type", "new_built_up"),
+                        "confidence_threshold": 0.15,
+                    },
+                    "llm_used": f"Google Gemini API ({model_name})",
+                    "narration_template": data.get("explanation_draft", "Analysis complete.")
+                }
+        except Exception as err:
+            logger.debug("Gemini model %s info: %s", model_name, err)
+            continue
+
     return None
 
 
 def _query_groq(query: str, api_key: str, available_regions: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    """Query Groq API as high-speed fallback."""
+    """Query Groq API using active high-speed models."""
     from groq import Groq
 
     client = Groq(api_key=api_key)
@@ -164,30 +194,39 @@ def _query_groq(query: str, api_key: str, available_regions: List[Dict[str, Any]
 Available regions: {[r['region'] for r in available_regions]}.
 Return JSON object with keys: target_region_key, start_date, end_date, change_type.
 """
-    chat_completion = client.chat.completions.create(
-        messages=[
-            {"role": "system", "content": "You are a spatial query parser. Output valid JSON only."},
-            {"role": "user", "content": prompt}
-        ],
-        model="llama3-8b-8192",
-        temperature=0.1,
-        response_format={"type": "json_object"}
-    )
-    res_text = chat_completion.choices[0].message.content
-    if res_text:
-        data = json.loads(res_text)
-        return {
-            "intent": {
-                "location": data.get("target_region_key", "dubai"),
-                "target_region_key": data.get("target_region_key", "dubai"),
-                "start_date": data.get("start_date", "2015-01"),
-                "end_date": data.get("end_date", "2018-01"),
-                "change_type": data.get("change_type", "new_built_up"),
-                "confidence_threshold": 0.15,
-            },
-            "llm_used": "Groq Llama-3 API",
-            "narration_template": "Query parsed via Groq API."
-        }
+    for model_name in ["groq/compound-mini", "groq/compound", "qwen/qwen3.6-27b"]:
+        try:
+            chat_completion = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "You are a spatial query parser. Output valid JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                model=model_name,
+                temperature=0.1,
+            )
+            res_text = chat_completion.choices[0].message.content
+            if res_text:
+                # Find JSON substring
+                s_idx = res_text.find('{')
+                e_idx = res_text.rfind('}')
+                if s_idx != -1 and e_idx != -1:
+                    data = json.loads(res_text[s_idx:e_idx+1])
+                    return {
+                        "intent": {
+                            "location": data.get("target_region_key", "dubai"),
+                            "target_region_key": data.get("target_region_key", "dubai"),
+                            "start_date": data.get("start_date", "2015-01"),
+                            "end_date": data.get("end_date", "2018-01"),
+                            "change_type": data.get("change_type", "new_built_up"),
+                            "confidence_threshold": 0.15,
+                        },
+                        "llm_used": f"Groq API ({model_name})",
+                        "narration_template": f"Query parsed via Groq {model_name}."
+                    }
+        except Exception as err:
+            logger.warning("Groq model %s failed: %s", model_name, err)
+            continue
+
     return None
 
 

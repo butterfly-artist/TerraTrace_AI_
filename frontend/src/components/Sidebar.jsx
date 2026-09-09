@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import {
   Search, SlidersHorizontal, Database, ImageIcon,
-  ChevronRight, Calendar, MapPin, X, Layers, Loader2
+  ChevronRight, ChevronLeft, Calendar, MapPin, X, Layers, Loader2
 } from 'lucide-react'
 
 // ── OSCD demo scenes ──────────────────────────────────────────
@@ -88,20 +88,19 @@ function SceneCard({ scene, selected, loading, onClick }) {
       disabled={loading}
       className="w-full text-left rounded-xl p-3 transition-all duration-200 glass-hover"
       style={{
-        background: selected ? 'rgba(34,211,238,0.08)' : 'rgba(11,20,40,0.5)',
-        border: `1px solid ${selected ? 'rgba(34,211,238,0.35)' : 'rgba(34,211,238,0.08)'}`,
+        background: selected ? 'rgba(34,211,238,0.12)' : 'rgba(11,20,40,0.5)',
+        border: `1px solid ${selected ? 'rgba(34,211,238,0.4)' : 'rgba(34,211,238,0.08)'}`,
         boxShadow: selected ? 'var(--shadow-glow)' : 'none',
         opacity: loading && !selected ? 0.5 : 1,
       }}
       aria-pressed={selected}
       id={`scene-card-${scene.id}`}
     >
-      {/* Row 1 */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <div>
           <div className="flex items-center gap-1.5">
             <ImageIcon size={11} style={{ color: 'var(--color-terra)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            <span className="text-sm font-semibold text-white">
               {scene.name}
             </span>
             {selected && loading && (
@@ -114,7 +113,6 @@ function SceneCard({ scene, selected, loading, onClick }) {
           </div>
         </div>
 
-        {/* Change score badge */}
         <div
           className="flex flex-col items-center justify-center w-10 h-10 rounded-lg flex-shrink-0"
           style={{
@@ -129,7 +127,6 @@ function SceneCard({ scene, selected, loading, onClick }) {
         </div>
       </div>
 
-      {/* Row 2: metadata pills */}
       <div className="flex flex-wrap gap-1.5">
         <span
           className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px]"
@@ -155,10 +152,7 @@ function SceneCard({ scene, selected, loading, onClick }) {
   )
 }
 
-/**
- * Sidebar — glass panel with search, filters, and OSCD scene list.
- */
-export default function Sidebar({ selectedRegion, onSelectRegion, isComparing }) {
+export default function Sidebar({ selectedRegion, onSelectRegion, isComparing, isCollapsed = false, onToggleCollapse }) {
   const [query, setQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [maxCloud, setMaxCloud] = useState(20)
@@ -172,31 +166,64 @@ export default function Sidebar({ selectedRegion, onSelectRegion, isComparing })
     return matchesQuery && matchesCloud
   })
 
+  if (isCollapsed) {
+    return (
+      <aside className="w-12 h-full flex flex-col items-center py-3 gap-3 flex-shrink-0 z-[1010]" style={{ background: 'rgba(6,12,26,0.95)', borderRight: '1px solid rgba(34,211,238,0.12)' }}>
+        <button
+          onClick={onToggleCollapse}
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-cyan-400 bg-slate-900 border border-cyan-500/30 hover:bg-cyan-500/20"
+          title="Expand Scene Browser"
+        >
+          <ChevronRight size={16} />
+        </button>
+        <div className="w-full border-t border-slate-800 my-1" />
+        {DEMO_SCENES.map(scene => (
+          <button
+            key={scene.id}
+            onClick={() => onSelectRegion(scene.region)}
+            className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono text-[10px] font-bold transition-all ${
+              selectedRegion === scene.region ? 'bg-cyan-400 text-black shadow-glow' : 'bg-slate-900 text-slate-400 border border-slate-800'
+            }`}
+            title={`${scene.name} (${scene.location})`}
+          >
+            {scene.name.slice(0, 2).toUpperCase()}
+          </button>
+        ))}
+      </aside>
+    )
+  }
+
   return (
     <aside
-      className="flex flex-col h-full animate-slide-in"
+      className="flex flex-col h-full animate-slide-in relative flex-shrink-0 z-[1010]"
       style={{
         width: '300px',
         minWidth: '280px',
-        background: 'rgba(6,12,26,0.88)',
-        borderRight: '1px solid rgba(34,211,238,0.1)',
+        background: 'rgba(6,12,26,0.92)',
+        borderRight: '1px solid rgba(34,211,238,0.12)',
         backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
       }}
     >
-      {/* ── Header ─────────────────────────────────────── */}
       <div className="flex-shrink-0 px-4 pt-4 pb-3" style={{ borderBottom: '1px solid rgba(34,211,238,0.08)' }}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Database size={14} style={{ color: 'var(--color-terra)' }} />
-            <h2 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            <h2 className="text-sm font-semibold text-white">
               Scene Browser
             </h2>
           </div>
-          <span className="badge badge-terra">{filtered.length} scenes</span>
+          <div className="flex items-center gap-1.5">
+            <span className="badge badge-terra">{filtered.length} scenes</span>
+            <button
+              onClick={onToggleCollapse}
+              className="p-1 rounded text-slate-400 hover:text-cyan-400 hover:bg-slate-800"
+              title="Collapse Sidebar"
+            >
+              <ChevronLeft size={14} />
+            </button>
+          </div>
         </div>
 
-        {/* Search */}
         <div className="relative mb-2">
           <Search
             size={13}
@@ -217,20 +244,16 @@ export default function Sidebar({ selectedRegion, onSelectRegion, isComparing })
               onClick={() => setQuery('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2"
               style={{ color: 'var(--color-text-muted)' }}
-              aria-label="Clear search"
             >
               <X size={12} />
             </button>
           )}
         </div>
 
-        {/* Filter toggle */}
         <button
           onClick={() => setShowFilters(v => !v)}
           className="flex items-center gap-1.5 text-xs font-medium transition-colors duration-150 w-full"
           style={{ color: showFilters ? 'var(--color-terra)' : 'var(--color-text-muted)' }}
-          aria-expanded={showFilters}
-          id="filter-toggle"
         >
           <SlidersHorizontal size={11} />
           Filters
@@ -243,7 +266,6 @@ export default function Sidebar({ selectedRegion, onSelectRegion, isComparing })
           />
         </button>
 
-        {/* Filters panel */}
         {showFilters && (
           <div
             className="mt-2 p-3 rounded-lg animate-fade-in"
@@ -259,14 +281,12 @@ export default function Sidebar({ selectedRegion, onSelectRegion, isComparing })
               value={maxCloud}
               onChange={e => setMaxCloud(Number(e.target.value))}
               className="w-full mt-1.5"
-              id="cloud-cover-filter"
               style={{ accentColor: 'var(--color-terra)' }}
             />
           </div>
         )}
       </div>
 
-      {/* ── Scene list ──────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-2">
         {filtered.length === 0 ? (
           <div className="text-center py-8" style={{ color: 'var(--color-text-muted)' }}>
@@ -286,7 +306,6 @@ export default function Sidebar({ selectedRegion, onSelectRegion, isComparing })
         )}
       </div>
 
-      {/* ── Footer ─────────────────────────────────────── */}
       <div
         className="flex-shrink-0 px-4 py-3"
         style={{ borderTop: '1px solid rgba(34,211,238,0.08)', background: 'rgba(2,4,10,0.5)' }}
@@ -297,10 +316,8 @@ export default function Sidebar({ selectedRegion, onSelectRegion, isComparing })
             Onera Satellite Change Detection
           </span>
         </div>
-        <p className="text-[10px] mt-1" style={{ color: 'var(--color-text-muted)' }}>
-          Sentinel-2 multispectral · 13 bands · 10–60 m/px
-        </p>
       </div>
     </aside>
   )
 }
+
