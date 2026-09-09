@@ -3,6 +3,10 @@
    Space-grade dark satellite imagery platform aesthetic
 ───────────────────────────────────────────────────────────── */
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
