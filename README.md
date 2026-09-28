@@ -4,9 +4,6 @@
 TerraTrace AI is an enterprise-grade AI/ML geospatial analytics system designed for bi-temporal satellite image change detection, land cover transition monitoring, climate correlation, and interactive AI Geo-Copilot query parsing.
 
 
-
-
-
 ---
 
 ## 📸 Key Capabilities
